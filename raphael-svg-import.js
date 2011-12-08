@@ -5,13 +5,14 @@
 * Licensed under the MIT (http://www.opensource.org/licenses/mit-license.php) license.
 * 
 * 
-* 2010-10-05 modifications by Jonas Olmstead
+* 2011-12-08 modifications by Jonas Olmstead
 * - added support for radial and linear gradients
 * - added support for paths
 * - removed prototype.js dependencies (I can't read that stuff)
 * - changed input parameter to svg xml file
 * - added support for text elements
-* - added support for reading groups into flat structure
+* - added support for nested groups
+* - added support for transforms and scaling applied to groups
 * - svg elements returned as a set
 *
 */
@@ -19,13 +20,9 @@ Raphael.fn.importSVG = function (svgXML) {
   try {
     
     // create a set to return 
-    var myNewSet = this.set();
+    var m_myNewSet = this.set();
     
     var strSupportedShapes = "|rect|circle|ellipse|path|image|text|polygon|";
-    var node;
-    var match;
-    
-    var m;
     
     // collect all gradient colors
     var linGrads = svgXML.getElementsByTagName("linearGradient");
@@ -34,7 +31,7 @@ Raphael.fn.importSVG = function (svgXML) {
     
     this.doFill = function(strNode,attr,mNodeName,mNodeValue) {
   	  // check if linear gradient
-  	  if (m.nodeValue.indexOf("url") == 0) {
+  	  if (mNodeValue.indexOf("url") == 0) {
   		  var opacity;
   		  var gradID = mNodeValue.substring("url(#".length,mNodeValue.length - 1);
 			  for (var l=0;l<radGrads.length;l++)
@@ -99,8 +96,32 @@ Raphael.fn.importSVG = function (svgXML) {
     	
     };
     
-    this.parseElement = function(elShape) {
-    	node = elShape.nodeName;
+    this.parseElement = function(elShape, myNewSet) {
+    	var node = elShape.nodeName;
+		
+    	if (node == "g") {
+    		// this is a group, parse the children and add to set
+			var groupSet = this.set();
+			
+    		for (var o=0;o<elShape.childNodes.length;o++)
+    			this.parseElement(elShape.childNodes.item(o), groupSet);
+				
+			// now apply transforms and attributes to set
+			for (var k=0;k<elShape.attributes.length;k++) {
+				var m = elShape.attributes[k];
+				if (m.nodeName == "transform") {
+					var actions = m.nodeValue.split(')');
+					for (var a=0;a<actions.length;a++)
+						if (actions[a]) 
+							eval("groupSet." + actions[a] + ")");
+				}
+				else
+					groupSet.attr(m.nodeName,m.nodeValue);
+			}
+			myNewSet.push(groupSet);
+			return;
+    	}
+
     	if (node && strSupportedShapes.indexOf("|" + node + "|") >= 0) {
         	    	
 	        var attr = { "stroke-width": 0, "fill":"#fff" };
@@ -111,7 +132,7 @@ Raphael.fn.importSVG = function (svgXML) {
 	        
 	        m_font = "";
             for (var k=0;k<elShape.attributes.length;k++) {
-	        	  m = elShape.attributes[k];
+	        	var m = elShape.attributes[k];
 	        	  	
 	            switch(m.nodeName) {
 	              case "stroke-dasharray":
@@ -120,7 +141,7 @@ Raphael.fn.importSVG = function (svgXML) {
 	              case "style":
 	            	// TODO: handle gradient fills within a style
 	                style = m.nodeValue.split(";");
-	                for (var l in style)
+	                for (var l=0;l<style.length;l++)
 	                	if (style[l].split(":")[0] == "fill")
 	                		this.doFill(node,attr,style[l].split(":")[0],style[l].split(":")[1]);
 	                	else
@@ -176,6 +197,7 @@ Raphael.fn.importSVG = function (svgXML) {
 	            shape = this.path(attr["d"]);
 	          break;
 	          case "polygon":
+	        	// convert polygon to a path
 	            var point_string = attr["points"].trim();
 	            var aryPoints = point_string.split(" ");
 	            var strNewPoints = "M";
@@ -212,21 +234,15 @@ Raphael.fn.importSVG = function (svgXML) {
     for (var i=0;i<elSVG.childNodes.length;i++) {
     	elShape = elSVG.childNodes.item(i);
     	
-    	if (elShape.nodeName == "g") {
-    		// this is a group, parse the children
-    		for (var o=0;o<elShape.childNodes.length;o++)
-    			this.parseElement(elShape.childNodes.item(o));
-    	}
-    	else
-    		this.parseElement(elShape);
-    	
-    }
+		this.parseElement(elShape, m_myNewSet);
+		
+     }
 
   } catch (error) {
     alert("The SVG data you entered was invalid! (" + error + ")");
   }
   
   // return our new set
-  return myNewSet;
+  return m_myNewSet;
   
 };
