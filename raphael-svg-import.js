@@ -116,11 +116,11 @@ Raphael.fn.importSVG = function (svgXML) {
 			// now apply transforms and attributes to set
 			for (var k=0;k<elShape.attributes.length;k++) {
 				var m = elShape.attributes[k];
-				if (m.nodeName == "transform") {
+				if (m.nodeName == "transform" && groupSet.transform) {
 					var actions = m.nodeValue.split(')');
 					for (var a=0;a<actions.length;a++) {
 						if (actions[a].indexOf("matrix") == 0) 
-							eval("groupSet.matrix = Raphael.M" + actions[a].substring(1) + ");");
+							groupSet.transform("m" + actions[a].substring(actions[a].indexOf("(")+1));
 						else if (actions[a]) 
 							eval("groupSet." + actions[a] + ")");
 					}
@@ -145,15 +145,6 @@ Raphael.fn.importSVG = function (svgXML) {
 	        	var m = elShape.attributes[k];
 	        	  	
 	            switch(m.nodeName) {
-				  case "transform":
-					var actions = m.nodeValue.split(')');
-					for (var a=0;a<actions.length;a++) {
-						if (actions[a].indexOf("matrix") == 0) 
-							eval("myNewSet.matrix = Raphael.M" + actions[a].substring(1) + ");");
-						else if (actions[a]) 
-							eval("myNewSet." + actions[a] + ")");
-					  }
-				    break;
 	              case "stroke-dasharray":
 	                attr[m.nodeName] = "- ";
 	              break;
@@ -242,7 +233,24 @@ Raphael.fn.importSVG = function (svgXML) {
 	        // put shape into set 
 	        myNewSet.push(shape);
 	        	        
+			// apply attributes
 	        shape.attr(attr);
+			
+			// apply transforms
+            for (var k=0;k<elShape.attributes.length;k++) {
+	        	var m = elShape.attributes[k];
+	        	  	
+	            if (m.nodeName == "transform" && shape.transform) {
+					var actions = m.nodeValue.split(')');
+					for (var a=0;a<actions.length;a++) {
+						if (actions[a].indexOf("matrix") == 0) 
+							shape.transform("m" + actions[a].substring(actions[a].indexOf("(")+1));
+						else if (actions[a]) 
+							eval("shape." + actions[a] + ")");
+					  }
+				}
+			}
+			
 	    }
     };
     
