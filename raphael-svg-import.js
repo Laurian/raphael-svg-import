@@ -46,16 +46,19 @@ Raphael.fn.importSVG = function (svgXML) {
   			    				stop1 = radGrads.item(l).childNodes.item(st);
   			    		}
 
+					if (!stop1)
+						return;		// could not parse stops
+						
   			    	// TODO: implement radial offset
   			    	// radial gradients not supported for paths, so do linear
   			    	if (strNode == "path")
   			    		attr[mNodeName] = 90 + "-" + stop1.getAttribute("stop-color") 
-						+ "-" + stop2.getAttribute("stop-color") 
-						+ ":50-" + stop1.getAttribute("stop-color");
+							+ "-" + stop2.getAttribute("stop-color") 
+							+ ":50-" + stop1.getAttribute("stop-color");
   			    	else
 						attr[mNodeName] = "r(" + radGrads.item(l).getAttribute("fx") + "," 
-						+ radGrads.item(l).getAttribute("fx") + ")" + stop1.getAttribute("stop-color") 
-						+ "-" + stop2.getAttribute("stop-color");
+							+ radGrads.item(l).getAttribute("fx") + ")" + stop1.getAttribute("stop-color") 
+							+ "-" + stop2.getAttribute("stop-color");
 
   			    	if (stop1.getAttribute("stop-opacity"))
 						opacity = stop1.getAttribute("stop-opacity")
@@ -81,6 +84,10 @@ Raphael.fn.importSVG = function (svgXML) {
   			    			else
   			    				stop1 = linGrads.item(l).childNodes.item(st);
   			    		}
+						
+					if (!stop1)
+						return;		// could not parse stops
+
   			    	// TODO: hardcoded offset value of 50
 					attr[mNodeName] = angle + "-" + stop1.getAttribute("stop-color") 
 						+ "-" + stop2.getAttribute("stop-color") 
@@ -111,9 +118,12 @@ Raphael.fn.importSVG = function (svgXML) {
 				var m = elShape.attributes[k];
 				if (m.nodeName == "transform") {
 					var actions = m.nodeValue.split(')');
-					for (var a=0;a<actions.length;a++)
-						if (actions[a]) 
+					for (var a=0;a<actions.length;a++) {
+						if (actions[a].indexOf("matrix") == 0) 
+							eval("groupSet.matrix = Raphael.M" + actions[a].substring(1) + ");");
+						else if (actions[a]) 
 							eval("groupSet." + actions[a] + ")");
+					}
 				}
 				else
 					groupSet.attr(m.nodeName,m.nodeValue);
@@ -135,6 +145,15 @@ Raphael.fn.importSVG = function (svgXML) {
 	        	var m = elShape.attributes[k];
 	        	  	
 	            switch(m.nodeName) {
+				  case "transform":
+					var actions = m.nodeValue.split(')');
+					for (var a=0;a<actions.length;a++) {
+						if (actions[a].indexOf("matrix") == 0) 
+							eval("myNewSet.matrix = Raphael.M" + actions[a].substring(1) + ");");
+						else if (actions[a]) 
+							eval("myNewSet." + actions[a] + ")");
+					  }
+				    break;
 	              case "stroke-dasharray":
 	                attr[m.nodeName] = "- ";
 	              break;
