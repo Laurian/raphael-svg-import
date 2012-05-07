@@ -16,7 +16,7 @@
 * - svg elements returned as a set
 *
 */
-Raphael.fn.importSVG = function (svgXML) {
+Raphael.fn.importSVG = function (svgXML, callback) {
   try {
     
     // create a set to return 
@@ -250,7 +250,10 @@ Raphael.fn.importSVG = function (svgXML) {
 					  }
 				}
 			}
-			
+		
+			if (callback) {
+	    		callback(elShape, shape);
+	    	}	
 	    }
     };
     
