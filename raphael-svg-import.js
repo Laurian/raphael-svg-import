@@ -15,9 +15,12 @@
 * - added support for transforms and scaling applied to groups
 * - svg elements returned as a set
 *
+* Modifications by Laurian Gridinoc
+* - commented out the try/catch error alert block
+* - added a callback to which each svg element / raphael shape pair is sent
 */
 Raphael.fn.importSVG = function (svgXML, callback) {
-  try {
+  // try {
     
     // create a set to return 
     var m_myNewSet = this.set();
@@ -268,9 +271,9 @@ Raphael.fn.importSVG = function (svgXML, callback) {
 		
      }
 
-  } catch (error) {
-    alert("The SVG data you entered was invalid! (" + error + ")");
-  }
+  // } catch (error) {
+  //   alert("The SVG data you entered was invalid! (" + error + ")");
+  // }
   
   // return our new set
   return m_myNewSet;
